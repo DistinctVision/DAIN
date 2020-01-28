@@ -7,15 +7,15 @@ import numpy as np
 import numpy
 import networks
 from my_args import  args
-from scipy.misc import imread, imsave
+import cv2
 from AverageMeter import  *
 import shutil
 
 torch.backends.cudnn.benchmark = True # to speed up the
 
 DO_MiddleBurryOther = True
-MB_Other_DATA = "./MiddleBurySet/other-data/"
-MB_Other_RESULT = "./MiddleBurySet/other-result-author/"
+MB_Other_DATA = "./MiddleBurySet/test/"
+MB_Other_RESULT = "./MiddleBurySet/test-result/"
 MB_Other_GT = "./MiddleBurySet/other-gt-interp/"
 if not os.path.exists(MB_Other_RESULT):
     os.mkdir(MB_Other_RESULT)
@@ -74,13 +74,20 @@ if DO_MiddleBurryOther:
     for dir in subdir: 
         print(dir)
         os.mkdir(os.path.join(gen_dir, dir))
-        arguments_strFirst = os.path.join(MB_Other_DATA, dir, "frame10.png")
-        arguments_strSecond = os.path.join(MB_Other_DATA, dir, "frame11.png")
+        arguments_strFirst = os.path.join(MB_Other_DATA, dir, "30.png")
+        arguments_strSecond = os.path.join(MB_Other_DATA, dir, "40.png")
         gt_path = os.path.join(MB_Other_GT, dir, "frame10i11.png")
 
-        X0 =  torch.from_numpy( np.transpose(imread(arguments_strFirst) , (2,0,1)).astype("float32")/ 255.0).type(dtype)
-        X1 =  torch.from_numpy( np.transpose(imread(arguments_strSecond) , (2,0,1)).astype("float32")/ 255.0).type(dtype)
+        image_scale = 0.2
 
+        image_a = cv2.imread(arguments_strFirst)
+        image_b = cv2.imread(arguments_strSecond)
+
+        image_a = cv2.resize(image_a, None, fx=image_scale, fy=image_scale)
+        image_b = cv2.resize(image_b, None, fx=image_scale, fy=image_scale)
+
+        X0 = torch.from_numpy(np.transpose(image_a, (2, 0, 1)).astype("float32") / 255.0).type(dtype)
+        X1 = torch.from_numpy(np.transpose(image_b, (2, 0, 1)).astype("float32") / 255.0).type(dtype)
 
         y_ = torch.FloatTensor()
 
@@ -100,7 +107,7 @@ if DO_MiddleBurryOther:
         else:
             intWidth_pad = intWidth
             intPaddingLeft = 32
-            intPaddingRight= 32
+            intPaddingRight = 32
 
         if intHeight != ((intHeight >> 7) << 7):
             intHeight_pad = (((intHeight >> 7) + 1) << 7)  # more than necessary
@@ -173,14 +180,11 @@ if DO_MiddleBurryOther:
         # shutil.copy(arguments_strSecond, os.path.join(gen_dir, dir,  "frame11_i{:.3f}_11.png".format(1)))
 
         count = 0
-        shutil.copy(arguments_strFirst, os.path.join(gen_dir, dir, "{:0>4d}.png".format(count)))
+        cv2.imwrite(os.path.join(gen_dir, dir, "{:0>4d}.png".format(count)), image_a)
         count  = count+1
         for item, time_offset in zip(y_, time_offsets):
             arguments_strOut = os.path.join(gen_dir, dir, "{:0>4d}.png".format(count))
             count = count + 1
-            imsave(arguments_strOut, np.round(item).astype(numpy.uint8))
-        shutil.copy(arguments_strSecond, os.path.join(gen_dir, dir, "{:0>4d}.png".format(count)))
+            cv2.imwrite(arguments_strOut, np.round(item).astype(numpy.uint8))
+        cv2.imwrite(os.path.join(gen_dir, dir, "{:0>4d}.png".format(count)), image_b)
         count = count + 1
-
-
-         

@@ -10,8 +10,8 @@ import numpy
 import networks
 from my_args import  args
 
-from scipy.misc import imread, imsave
-from AverageMeter import  *
+import cv2
+from AverageMeter import *
 
 torch.backends.cudnn.benchmark = True # to speed up the
 
@@ -83,9 +83,8 @@ if DO_MiddleBurryOther:
         arguments_strOut = os.path.join(gen_dir, dir, "frame10i11.png")
         gt_path = os.path.join(MB_Other_GT, dir, "frame10i11.png")
 
-        X0 =  torch.from_numpy( np.transpose(imread(arguments_strFirst) , (2,0,1)).astype("float32")/ 255.0).type(dtype)
-        X1 =  torch.from_numpy( np.transpose(imread(arguments_strSecond) , (2,0,1)).astype("float32")/ 255.0).type(dtype)
-
+        X0 = torch.from_numpy(np.transpose(cv2.imread(arguments_strFirst), (2, 0, 1)).astype("float32") / 255.0).type(dtype)
+        X1 = torch.from_numpy(np.transpose(cv2.imread(arguments_strSecond), (2, 0, 1)).astype("float32") / 255.0).type(dtype)
 
         y_ = torch.FloatTensor()
 
@@ -119,8 +118,8 @@ if DO_MiddleBurryOther:
         pader = torch.nn.ReplicationPad2d([intPaddingLeft, intPaddingRight , intPaddingTop, intPaddingBottom])
 
         torch.set_grad_enabled(False)
-        X0 = Variable(torch.unsqueeze(X0,0))
-        X1 = Variable(torch.unsqueeze(X1,0))
+        X0 = Variable(torch.unsqueeze(X0, 0))
+        X1 = Variable(torch.unsqueeze(X1, 0))
         X0 = pader(X0)
         X1 = pader(X1)
 
@@ -159,11 +158,10 @@ if DO_MiddleBurryOther:
         X1 = np.transpose(255.0 * X1.clip(0,1.0)[0, :, intPaddingTop:intPaddingTop+intHeight, intPaddingLeft: intPaddingLeft+intWidth], (1, 2, 0))
 
 
-        imsave(arguments_strOut, np.round(y_).astype(numpy.uint8))
+        cv2.imwrite(arguments_strOut, np.round(y_).astype(numpy.uint8))
 
-
-        rec_rgb =  imread(arguments_strOut)
-        gt_rgb = imread(gt_path)
+        rec_rgb = cv2.imread(arguments_strOut)
+        gt_rgb = cv2.imread(gt_path)
 
         diff_rgb = 128.0 + rec_rgb - gt_rgb
         avg_interp_error_abs = np.mean(np.abs(diff_rgb - 128.0))
